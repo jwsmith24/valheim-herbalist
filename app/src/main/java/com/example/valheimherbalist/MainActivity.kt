@@ -12,16 +12,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.valheimherbalist.ui.theme.ValheimHerbalistTheme
+import com.example.valheimherbalist.ui.theme.garden.GardenScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ValheimHerbalistTheme {
+            ValheimHerbalistTheme(
+                darkTheme = true,
+                dynamicColor = false
+            ) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    GardenScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

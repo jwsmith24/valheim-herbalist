@@ -25,5 +25,5 @@ sealed interface PlotState {
 data class GardenState (
     val day: Int,
     val plots: List<PlotState>,
-    val inventory: Map<String, Int>
+    val inventory: Inventory
 )

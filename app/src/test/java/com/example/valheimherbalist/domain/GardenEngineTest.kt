@@ -1,13 +1,10 @@
 package com.example.valheimherbalist.domain
 
-import androidx.lifecycle.GeneratedAdapter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GardenEngineTest {
-
-
 
     private val carrot = Crop(
         id = "carrot",
@@ -16,12 +13,14 @@ class GardenEngineTest {
         harvestYield = 3
     )
 
+    private val cropsById = mapOf(carrot.id to carrot)
+
     @Test
     fun `planting in empty plot consumes one seed and sets planted`() {
         val initial = GardenState(
             day = 0,
             plots = List(4) { PlotState.Empty},
-            inventory = mapOf("carrot_seed" to 1)
+            inventory = Inventory.EMPTY.add("carrot_seed", 1)
         )
 
         val result = GardenEngine.plant(
@@ -33,7 +32,7 @@ class GardenEngineTest {
         assertTrue(result is PlantResult.PlantedSuccessfully)
         result as PlantResult.PlantedSuccessfully
 
-        assertEquals(0, result.state.inventory["carrot_seed"] ?: 0)
+        assertEquals(0, result.state.inventory.count("carrot_seed"))
 
         assertEquals(
             PlotState.Planted(cropId = "carrot", plantedDay = 0),
@@ -46,7 +45,7 @@ class GardenEngineTest {
         val initial = GardenState(
             day = 0,
             plots = List(2) { PlotState.Empty},
-            inventory = emptyMap()
+            inventory = Inventory.EMPTY
         )
 
         val result = GardenEngine.plant(initial, plotIndex = 0, crop = carrot)
@@ -62,7 +61,7 @@ class GardenEngineTest {
                 PlotState.Planted("carrot", 0),
                 PlotState.Empty
             ),
-            inventory = mapOf("carrot_seed" to 1)
+            inventory = Inventory.EMPTY.add("carrot_seed", 1)
         )
 
         val result = GardenEngine.plant(initial, plotIndex = 0, crop = carrot)
@@ -75,7 +74,7 @@ class GardenEngineTest {
         val initial = GardenState(
             day = 0,
             plots = listOf(PlotState.Planted("carrot", plantedDay = 0)),
-            inventory = emptyMap()
+            inventory = Inventory.EMPTY
         )
         val crops = mapOf("carrot" to carrot)
 
@@ -93,20 +92,20 @@ class GardenEngineTest {
         val initial = GardenState(
             day = 0,
             plots = listOf(PlotState.Planted(cropId = "carrot", plantedDay = 0)),
-            inventory = emptyMap()
+            inventory = Inventory.EMPTY
         )
 
-        val result = GardenEngine.harvest(initial, 0)
+        val result = GardenEngine.harvest(initial, 0, cropsById)
 
         assertEquals(HarvestResult.NotHarvestable, result)
     }
 
     @Test
-    fun `harvesting plant returns success state`() {
+    fun `harvesting plant returns success state and updates inventory with correct yield`() {
         val initial = GardenState(
             day = 0,
             plots = listOf(PlotState.Planted(cropId = "carrot", plantedDay = 0)),
-            inventory = emptyMap()
+            inventory = Inventory.EMPTY
         )
 
         val crops = mapOf("carrot" to carrot)
@@ -114,14 +113,43 @@ class GardenEngineTest {
         val day1 = GardenEngine.advanceDay(initial, crops)
         val day2 = GardenEngine.advanceDay(day1, crops)
 
-        val result = GardenEngine.harvest(day2, 0)
+        val result = GardenEngine.harvest(day2, 0, cropsById)
 
         val expectedState = day2.copy(
             plots = listOf(PlotState.Empty),
-            inventory = mapOf("carrot" to 1)
+            inventory = Inventory.EMPTY.add("carrot", carrot.harvestYield)
         )
 
         assertEquals(HarvestResult.HarvestedSuccessfully(expectedState), result)
+    }
+
+    @Test
+    fun `harvesting empty plot returns PlotEmpty`() {
+        val initialState = GardenState(
+            day = 0,
+            plots = listOf(PlotState.Empty),
+            inventory = Inventory.EMPTY
+        )
+
+        val result = GardenEngine.harvest(initialState, 0, cropsById)
+
+        assertEquals(HarvestResult.PlotEmpty, result)
+    }
+
+    @Test
+    fun `harvesting a plant missing from the crops list will return unkown plant with id`() {
+        val initialState = GardenState(
+            day = 0,
+            plots = listOf(PlotState.Harvestable(
+                cropId = "mystery-crop",
+                plantedDay = 0
+            )),
+            inventory = Inventory.EMPTY
+        )
+
+        val result = GardenEngine.harvest(initialState, 0, cropsById)
+
+        assertEquals(HarvestResult.UnknownCrop(cropId = "mystery-crop"), result)
     }
 
 }

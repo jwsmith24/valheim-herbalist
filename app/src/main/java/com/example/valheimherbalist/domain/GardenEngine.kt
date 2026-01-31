@@ -13,22 +13,24 @@ sealed interface HarvestResult {
     data object NotHarvestable: HarvestResult
     data object PlotEmpty: HarvestResult
     data object InvalidPlotIndex: HarvestResult
+
+    data class UnknownCrop(val cropId: String): HarvestResult
 }
 
 object GardenEngine {
-
-    fun harvest(state: GardenState, plotIndex: Int) : HarvestResult {
+    fun harvest(state: GardenState, plotIndex: Int, cropsById: Map<String, Crop>) : HarvestResult {
         if (plotIndex !in state.plots.indices) return HarvestResult.InvalidPlotIndex
 
-        val targetPlot = state.plots[plotIndex]
 
-        when(targetPlot) {
+        when(val targetPlot = state.plots[plotIndex]) {
             is PlotState.Empty -> return HarvestResult.PlotEmpty
             is PlotState.Planted -> return HarvestResult.NotHarvestable
             is PlotState.Harvestable -> {
+                val yield: Int = cropsById[targetPlot.cropId]?.harvestYield ?: return HarvestResult.UnknownCrop(targetPlot.cropId)
+                val updatedInventory = state.inventory
+                    .add(targetPlot.cropId, yield)
+                    .add("${targetPlot.cropId}_seed", (yield - 1).coerceAtLeast(1) )
 
-                val count = state.inventory[targetPlot.cropId] ?: 0
-                val updatedInventory = state.inventory + (targetPlot.cropId to count + 1)
                 val updatedPlots = state.plots.toMutableList().also {
                     it[plotIndex] = PlotState.Empty
                 }
@@ -47,15 +49,14 @@ object GardenEngine {
         val currentPlot = state.plots[plotIndex]
         if (currentPlot != PlotState.Empty) return PlantResult.PlotNotEmpty
 
-        val seedKey = "${crop.id}_seed"
-        val seeds = state.inventory[seedKey] ?: 0
+        val seeds = state.inventory.count("${crop.id}_seed")
         if (seeds <= 0) return PlantResult.NotEnoughSeeds
 
         val updatedPlots = state.plots.toMutableList().apply {
             this[plotIndex] = PlotState.Planted(cropId = crop.id, plantedDay = state.day)
         }
 
-        val updatedInventory = state.inventory + (seedKey to (seeds-1))
+        val updatedInventory = state.inventory.remove("${crop.id}_seed", 1)
 
         return PlantResult.PlantedSuccessfully(
             state.copy(plots = updatedPlots, inventory = updatedInventory)
