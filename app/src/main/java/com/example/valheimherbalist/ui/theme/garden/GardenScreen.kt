@@ -26,11 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.valheimherbalist.domain.Inventory
 import com.example.valheimherbalist.domain.PlotState
 
 
@@ -81,10 +79,19 @@ fun GardenScreen(
             .padding(vertical = 10.dp, horizontal = 16.dp)
 
         ) {
-            Text(text = "Carrot Seeds: ${garden.inventory.count("carrot_seed")}")
-            Text(text = "Carrots: ${garden.inventory.count("carrot")}")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text(text = "Carrot Seeds: ${garden.inventory.count("carrot_seed")}")
+                    Text(text = "Carrots: ${garden.inventory.count("carrot")}")
+                }
+                Column() {
+                    Text(text = "Turnip Seeds: ${garden.inventory.count("turnip_seed")}")
+                    Text(text = "Turnips: ${garden.inventory.count("turnip")}")
+                }
+            }
         }
-
 
         Spacer(Modifier.height(10.dp))
         Text(text = message ?: "", color = MaterialTheme.colorScheme.primary)
@@ -92,7 +99,23 @@ fun GardenScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        Text(text = "Garden", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "Garden", style = MaterialTheme.typography.headlineMedium)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(onClick = {
+                    gardenViewModel.onActiveCropTapped("carrot")
+                }) {Text("Carrot") }
+                Button(onClick = {
+                    gardenViewModel.onActiveCropTapped("turnip")
+                }) {Text("Turnip") }
+            }
+        }
+
         Spacer(Modifier.height(8.dp))
 
 
@@ -135,9 +158,5 @@ fun GardenScreen(
 
             }
         }
-
-
-
-
     }
 }

@@ -21,7 +21,17 @@ class GardenViewModel: ViewModel() {
         harvestYield = 3
     )
 
-    private val cropsById = mapOf(carrot.id to carrot)
+    private val turnip = Crop(
+        id = "turnip",
+        name = "Turnip",
+        growDays = 4,
+        harvestYield = 3
+    )
+
+    private val cropsById = mapOf(
+        carrot.id to carrot,
+        turnip.id to turnip,
+    )
 
 
     private val _uiState = MutableStateFlow(
@@ -29,13 +39,20 @@ class GardenViewModel: ViewModel() {
             garden = GardenState(
                 day = 0,
                 plots = List(STARTER_PLOT_SIZE) { PlotState.Empty},
-                inventory = Inventory.EMPTY.add("carrot_seed", STARTER_SEED_COUNT)
+                inventory = Inventory.EMPTY
+                    .add("carrot_seed", STARTER_SEED_COUNT)
+                    .add("turnip_seed", STARTER_SEED_COUNT)
             )
 
         )
     )
 
     val uiState: StateFlow<GardenUiState> = _uiState.asStateFlow()
+
+    private val _activeCrop = MutableStateFlow(
+        carrot
+    )
+    val activeCrop = _activeCrop.asStateFlow()
 
     fun nextDay() {
         val current = uiState.value.garden
@@ -48,19 +65,26 @@ class GardenViewModel: ViewModel() {
         val current = uiState.value.garden
 
         when (val plot = current.plots[plotIndex]) {
-            PlotState.Empty -> plantCarrot(plotIndex)
+            PlotState.Empty -> plantCrop(plotIndex, _activeCrop.value)
             is PlotState.Harvestable -> harvest(plotIndex)
             is PlotState.Planted -> _uiState.value = _uiState.value.copy(message = "Not ready yet!")
         }
     }
 
-    private fun plantCarrot(plotIndex: Int) {
+    fun onActiveCropTapped(cropId: String) {
+        if (cropId !in cropsById || activeCrop.value == cropsById[cropId]){
+            return
+        } else _activeCrop.value = cropsById[cropId]!!
+
+    }
+
+    private fun plantCrop(plotIndex: Int, crop: Crop) {
         val current = _uiState.value.garden
-        val result = GardenEngine.plant(current, plotIndex, carrot)
+        val result = GardenEngine.plant(current, plotIndex, crop)
 
         _uiState.value = when (result) {
             is PlantResult.PlantedSuccessfully -> GardenUiState(result.state, message = null)
-            PlantResult.NotEnoughSeeds -> _uiState.value.copy(message = "No carrot seeds.")
+            PlantResult.NotEnoughSeeds -> _uiState.value.copy(message = "No ${crop.name} seeds.")
             PlantResult.PlotNotEmpty -> _uiState.value.copy(message = "Plot is not empty.")
             PlantResult.InvalidPlotIndex -> _uiState.value.copy(message = "Invalid plot.")
         }
@@ -69,6 +93,7 @@ class GardenViewModel: ViewModel() {
     private fun harvest(plotIndex: Int) {
         val current = _uiState.value.garden
         val result = GardenEngine.harvest(current, plotIndex, cropsById)
+
 
         _uiState.value = when (result) {
             is HarvestResult.HarvestedSuccessfully -> GardenUiState(result.state, message = "Harvested!")
