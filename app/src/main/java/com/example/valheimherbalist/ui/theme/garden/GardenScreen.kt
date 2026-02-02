@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,8 +30,35 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.valheimherbalist.domain.CropType
 import com.example.valheimherbalist.domain.PlotState
 
+
+@Composable
+fun CropToggleButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val selectedContainerColor = MaterialTheme.colorScheme.secondary
+    val selectedContentColor = MaterialTheme.colorScheme.onSecondary
+
+    val defaultContainerColor = MaterialTheme.colorScheme.surfaceVariant
+    val defaultContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        colors = ButtonDefaults
+            .buttonColors(
+                containerColor = if (isSelected) selectedContainerColor else defaultContainerColor,
+                contentColor = if (isSelected) selectedContentColor else defaultContentColor
+            )
+    ) {
+        Text(text)
+    }
+}
 
 @Composable
 fun GardenScreen(
@@ -41,6 +69,7 @@ fun GardenScreen(
 
     val garden = uiState.garden
     val message = uiState.message
+
 
     Column(modifier = modifier
         .fillMaxSize()
@@ -86,7 +115,7 @@ fun GardenScreen(
                     Text(text = "Carrot Seeds: ${garden.inventory.count("carrot_seed")}")
                     Text(text = "Carrots: ${garden.inventory.count("carrot")}")
                 }
-                Column() {
+                Column {
                     Text(text = "Turnip Seeds: ${garden.inventory.count("turnip_seed")}")
                     Text(text = "Turnips: ${garden.inventory.count("turnip")}")
                 }
@@ -107,12 +136,18 @@ fun GardenScreen(
             Text(text = "Garden", style = MaterialTheme.typography.headlineMedium)
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = {
-                    gardenViewModel.onActiveCropTapped("carrot")
-                }) {Text("Carrot") }
-                Button(onClick = {
-                    gardenViewModel.onActiveCropTapped("turnip")
-                }) {Text("Turnip") }
+                CropToggleButton(
+                    onClick = { gardenViewModel.onActiveCropTapped(CropType.CARROT) },
+                    text = "Carrot",
+                    isSelected = garden.activeCrop.id == "carrot"
+
+                )
+                CropToggleButton(
+                    onClick = { gardenViewModel.onActiveCropTapped(CropType.TURNIP) },
+                    text = "Turnip",
+                    isSelected = garden.activeCrop.id == "turnip"
+
+                )
             }
         }
 

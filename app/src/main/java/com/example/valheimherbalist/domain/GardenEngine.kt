@@ -42,7 +42,7 @@ object GardenEngine {
         }
 
     }
-    fun plant(state: GardenState, plotIndex: Int, crop: Crop): PlantResult {
+    fun plant(state: GardenState, plotIndex: Int, crop: CropType): PlantResult {
 
         if (plotIndex !in state.plots.indices) return PlantResult.InvalidPlotIndex
 
